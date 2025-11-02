@@ -5,3 +5,4 @@ selenium
 requests
 openpyxl
 pandas
+lxml_html_clean
