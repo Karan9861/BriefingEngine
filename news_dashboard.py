@@ -11,6 +11,7 @@ import logging
 from io import BytesIO
 from datetime import datetime
 import requests
+import gc
 import re
 import json
 import openpyxl
@@ -587,7 +588,7 @@ if st.session_state.processing:
         if service:
             service.stop()
             print("Service stopped.")
-            
+        gc.collect()    
         end_time = time.time()
         elapsed_time = end_time - start_time
         minutes = int(elapsed_time // 60)
