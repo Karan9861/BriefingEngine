@@ -2,7 +2,6 @@ streamlit
 gnews
 newspaper3k
 selenium
-webdriver-manager
 requests
 openpyxl
 pandas
