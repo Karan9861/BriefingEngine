@@ -4,7 +4,6 @@ from gnews import GNews
 from newspaper import Article
 from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
-from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 import time
@@ -87,7 +86,8 @@ def setup_selenium_driver():
     options.add_experimental_option('excludeSwitches', ['enable-logging'])
 
     try:
-        service = Service(ChromeDriverManager().install())
+        # Point Selenium to the driver we installed in packages.txt
+        service = Service(executable_path="/usr/bin/chromedriver")
         driver = webdriver.Chrome(service=service, options=options)
         driver.set_page_load_timeout(PAGE_LOAD_TIMEOUT)
         return driver
