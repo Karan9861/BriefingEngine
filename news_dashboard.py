@@ -71,8 +71,7 @@ def convert_df_to_txt(df, topic):
     return txt_output.encode('utf-8')
 
 # --- Helper Functions ---
-
-def setup_selenium_driver():
+def setup_selenium_driver(service): # <-- MODIFIED: Accept service as an argument
     """Initializes and returns a headless Selenium WebDriver."""
     options = Options()
     options.add_argument('--headless')
@@ -86,13 +85,12 @@ def setup_selenium_driver():
     options.add_experimental_option('excludeSwitches', ['enable-logging'])
 
     try:
-        # Point Selenium to the driver we installed in packages.txt
-        service = Service(executable_path="/usr/bin/chromedriver")
+        # MODIFIED: Don't create a new service, use the one passed in
         driver = webdriver.Chrome(service=service, options=options)
         driver.set_page_load_timeout(PAGE_LOAD_TIMEOUT)
         return driver
     except Exception as e:
-        print(f"Failed to initialize Selenium WebDriver: {e}")
+        st.error(f"Failed to initialize Selenium WebDriver: {e}")
         st.stop()
 
 # --- DEEPSEEK API FUNCTIONS ---
@@ -446,6 +444,7 @@ status_container = st.empty()
 if st.session_state.processing:
     start_time = time.time()
     driver = None
+    service = None
     results_list = []
     successful_article_count = 0
     processed_article_count = 0
@@ -474,7 +473,9 @@ if st.session_state.processing:
         time.sleep(1)
 
         status_container.write('<div class="ai-status"><div class="spinner"></div> Booting Up Analysis Engine...</div>', unsafe_allow_html=True)
-        driver = setup_selenium_driver()
+        service = Service(executable_path="/usr/bin/chromedriver")
+        service.start()
+        driver = setup_selenium_driver(service)
         status_container.write('<div class="ai-status ai-status-complete">✅ Engine Ready.</div>', unsafe_allow_html=True)
         time.sleep(1)
 
@@ -581,7 +582,12 @@ if st.session_state.processing:
 
     finally:
         if driver:
-            driver.quit() 
+            driver.quit()
+            print("Driver quit.")
+        if service:
+            service.stop()
+            print("Service stopped.")
+            
         end_time = time.time()
         elapsed_time = end_time - start_time
         minutes = int(elapsed_time // 60)
