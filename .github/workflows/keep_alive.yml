@@ -1,0 +1,48 @@
+name: Keep Streamlit App Awake
+
+# Triggers the workflow on a schedule and allows manual triggering
+on:
+  schedule:
+    # Runs at the start of every 2nd hour (0:00, 2:00, 4:00, etc.)
+    # This is frequent enough to beat the 12-hour sleep timer.
+    - cron: "0 */10 * * *"
+  workflow_dispatch: # Adds a "Run workflow" button to the Actions tab for testing
+
+jobs:
+  ping_app:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Ping Streamlit App
+        run: |
+          # ---------------------------------------------------------
+          # TODO: REPLACE THE URL BELOW WITH YOUR STREAMLIT APP URL
+          # ---------------------------------------------------------
+          APP_URL="https://briefingengine.streamlit.app/"
+
+          echo "Pinging $APP_URL to keep it awake..."
+
+          # We use curl with a User-Agent to mimic a real browser visit.
+          # -s : Silent mode (don't show progress bar)
+          # -o /dev/null : Discard the HTML response body
+          # -w "%{http_code}" : Output only the HTTP status code
+          # -L : Follow redirects (Streamlit apps often redirect)
+          
+          STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" -L \
+            --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36" \
+            $APP_URL)
+
+          echo "Received Status Code: $STATUS_CODE"
+
+          # Check if the status code is 200 (OK)
+          if [ "$STATUS_CODE" -eq 200 ]; then
+            echo "✅ Success: App is awake and responding."
+          else
+            echo "❌ Error: App returned status $STATUS_CODE. It might be sleeping or down."
+            # We exit with success (0) even on failure to prevent GitHub from sending 
+            # you "Workflow Failed" emails every 2 hours if the app is just temporarily sluggish.
+            # If you WANT email alerts when it fails, change 'exit 0' to 'exit 1' below.
+            exit 0
+          fi
