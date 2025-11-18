@@ -98,7 +98,7 @@ def setup_selenium_driver(service): # <-- MODIFIED: Accept service as an argumen
 
 # Make sure to set this in your Streamlit Secrets!
 OPENROUTER_API_KEY = st.secrets["OPENROUTER_API_KEY"]
-DEEPSEEK_MODEL = "deepseek/deepseek-chat" 
+DEEPSEEK_MODEL = "deepseek/deepseek-r1-0528-qwen3-8b" 
 
 def create_deepseek_prompt(articles_data):
     """
