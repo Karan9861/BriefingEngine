@@ -1,47 +1,27 @@
 name: Keep Streamlit App Awake
 
-# Triggers the workflow on a schedule and allows manual triggering
 on:
   schedule:
-    # Runs at the start of every 10th hour (0:00, 10:00, 20:00, etc.)
-    - cron: "0 */10 * * *"
-  workflow_dispatch: # Adds a "Run workflow" button to the Actions tab for testing
+    # Running every 4 hours is safer than 10. 
+    # If the app sleeps, it takes time to wake up.
+    - cron: "0 */4 * * *"
+  workflow_dispatch:
 
 jobs:
-  ping_app:
+  run_selenium_script:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repository
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Ping Streamlit App
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
         run: |
-          # ---------------------------------------------------------
-          # Your specific Streamlit App URL
-          # ---------------------------------------------------------
-          APP_URL="https://briefingengine.streamlit.app/"
+          pip install selenium webdriver-manager
 
-          echo "Pinging $APP_URL with cookie support..."
-
-          # Fixed curl command to handle Streamlit's redirect loops (Exit Code 47)
-          # -L : Follow redirects
-          # --cookie / --cookie-jar : Persist cookies to handle session redirects
-          # --max-time 10 : Prevent hanging
-          
-          STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" -L \
-            --cookie /tmp/cookies.txt \
-            --cookie-jar /tmp/cookies.txt \
-            --max-time 10 \
-            --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36" \
-            $APP_URL)
-
-          echo "Received Status Code: $STATUS_CODE"
-
-          # We now accept 200 (OK) or 302 (Redirect) as success
-          if [ "$STATUS_CODE" -eq 200 ] || [ "$STATUS_CODE" -eq 302 ]; then
-            echo "✅ Success: App is awake."
-          else
-            echo "❌ Error: App returned status $STATUS_CODE."
-            # Exit with 0 to prevent workflow failure spam
-            exit 0
-          fi
+      - name: Run Wake Up Script
+        run: python keep_alive.py
