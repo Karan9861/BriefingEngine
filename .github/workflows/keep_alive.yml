@@ -2,8 +2,8 @@ name: Keep Streamlit App Awake
 
 on:
   schedule:
-    # Run every 4 hours (approx) to beat the sleep timer
-    - cron: "0 */4 * * *"
+    # Run every 2 days (approx) to keep it alive, or change as needed
+    - cron: "0 */10 * * *"
   workflow_dispatch: # Allows manual run
 
 jobs:
@@ -23,23 +23,23 @@ jobs:
           pip install selenium webdriver-manager
 
       - name: Wake up Streamlit App
-        # "shell: python" allows us to write python code directly in the YAML
         shell: python
         run: |
           from selenium import webdriver
           from selenium.webdriver.chrome.options import Options
           from selenium.webdriver.chrome.service import Service
+          from selenium.webdriver.common.by import By
           from webdriver_manager.chrome import ChromeDriverManager
           import time
 
           # -----------------------------------------------------
-          # REPLACE WITH YOUR APP URL
+          # YOUR APP URL
           # -----------------------------------------------------
           url = "https://briefingengine.streamlit.app/"
           
           print(f"Starting browser to visit: {url}")
 
-          # Setup Headless Chrome (No visual UI, runs in background)
+          # Setup Headless Chrome
           chrome_options = Options()
           chrome_options.add_argument("--headless") 
           chrome_options.add_argument("--no-sandbox")
@@ -50,14 +50,25 @@ jobs:
               driver = webdriver.Chrome(service=service, options=chrome_options)
               
               driver.get(url)
+              time.sleep(10) # Wait for initial load
               
-              # Wait for Streamlit's loading animation to finish
-              print("Page loaded. Waiting 30 seconds for app to boot...")
-              time.sleep(30) 
-              
-              print(f"Success! Page title is: {driver.title}")
+              # Check for the "Yes, get this app back up!" button
+              try:
+                  buttons = driver.find_elements(By.XPATH, "//button[contains(text(), 'Yes, get this app back up!')]")
+                  if buttons:
+                      print("💤 App is hibernating. Clicking the wake up button...")
+                      buttons[0].click()
+                      # Wait longer for the actual boot-up after clicking
+                      time.sleep(60)
+                      print("✅ Button clicked. App should be waking up now.")
+                  else:
+                      print("👀 Wake up button not found. App might already be running.")
+              except Exception as e:
+                  print(f"Button check failed: {e}")
+
+              # Final check
+              print(f"Final Page Title: {driver.title}")
               driver.quit()
+              
           except Exception as e:
               print(f"Error: {e}")
-              # We don't want to fail the workflow if the app is just slow, 
-              # but printing the error helps debugging.
