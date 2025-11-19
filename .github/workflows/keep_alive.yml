@@ -2,16 +2,15 @@ name: Keep Streamlit App Awake
 
 on:
   schedule:
-    # Running every 4 hours is safer than 10. 
-    # If the app sleeps, it takes time to wake up.
+    # Run every 4 hours (approx) to beat the sleep timer
     - cron: "0 */4 * * *"
-  workflow_dispatch:
+  workflow_dispatch: # Allows manual run
 
 jobs:
   run_selenium_script:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Check out repository
         uses: actions/checkout@v3
 
       - name: Set up Python
@@ -23,5 +22,42 @@ jobs:
         run: |
           pip install selenium webdriver-manager
 
-      - name: Run Wake Up Script
-        run: python keep_alive.py
+      - name: Wake up Streamlit App
+        # "shell: python" allows us to write python code directly in the YAML
+        shell: python
+        run: |
+          from selenium import webdriver
+          from selenium.webdriver.chrome.options import Options
+          from selenium.webdriver.chrome.service import Service
+          from webdriver_manager.chrome import ChromeDriverManager
+          import time
+
+          # -----------------------------------------------------
+          # REPLACE WITH YOUR APP URL
+          # -----------------------------------------------------
+          url = "https://briefingengine.streamlit.app/"
+          
+          print(f"Starting browser to visit: {url}")
+
+          # Setup Headless Chrome (No visual UI, runs in background)
+          chrome_options = Options()
+          chrome_options.add_argument("--headless") 
+          chrome_options.add_argument("--no-sandbox")
+          chrome_options.add_argument("--disable-dev-shm-usage")
+
+          try:
+              service = Service(ChromeDriverManager().install())
+              driver = webdriver.Chrome(service=service, options=chrome_options)
+              
+              driver.get(url)
+              
+              # Wait for Streamlit's loading animation to finish
+              print("Page loaded. Waiting 30 seconds for app to boot...")
+              time.sleep(30) 
+              
+              print(f"Success! Page title is: {driver.title}")
+              driver.quit()
+          except Exception as e:
+              print(f"Error: {e}")
+              # We don't want to fail the workflow if the app is just slow, 
+              # but printing the error helps debugging.
